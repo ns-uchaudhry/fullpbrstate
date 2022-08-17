@@ -1,0 +1,8 @@
+*filter
+:INPUT ACCEPT
+:OUTPUT ACCEPT
+{% set vips = grains['lbaas_vips'] %}
+{%- for vip in vips -%}
+-A INPUT -j DROP -d {{ vip }}
+-A OUTPUT -j mangle -s {{ vip }} --mangle-ip-s {{ salt['network.interfaces']()['ens3']['inet'][0]['address'] }}
+{% endfor %}

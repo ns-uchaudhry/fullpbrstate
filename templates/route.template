@@ -1,0 +1,21 @@
+# BLOCK TOP : salt managed zone : please do not edit
+# This tempalte adds interface, ip rules and creates a routing table for nodes that have bond0.100 defined
+# nlbedsr is a route_table reference that also created by salt
+{% set intfs = salt['network.interfaces']() %}
+{%- for intf in intfs -%}
+  {%- if intf == 'ens4' -%}
+auto {{ intf }}
+  iface {{ intf }} inet manual
+  vlan-raw-device bond0
+  post-up /etc/network/if-up.d/arp_rule_restore.sh
+  up ip route replace default dev {{ intf }} table nlbedsr
+  up ip route replace default via {{ grains['lbaas_gw'] }} dev {{ intf }} table nlbedsr
+    {%- set vips = grains['lbaas_vips'] %}
+    {%- set count = namespace(value=100) %}
+    {%- for vip in vips %}
+  up ip rule add from {{ vip }} table nlbedsr priority {{ count.value }}
+      {%- set count.value = count.value - 1 %}
+    {%- endfor -%}
+  {%- endif -%}
+{% endfor %}
+# BLOCK BOTTOM : end of salt managed zone --
